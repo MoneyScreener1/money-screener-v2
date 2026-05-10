@@ -1,7 +1,5 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-import { pipeline } from 
-"@xenova/transformers";
 import { getStore, cosineSimilarity } from "@/lib/searchEngine";
 
 let embedderPromise: any = null;
@@ -36,7 +34,8 @@ export async function POST(req: Request) {
   console.log("Query:", query);
 
   const store = getStore();
-  const queryVector = (await embed(query)) as number[];
+  console.log("STORE SAMPLE:", store?.[0]);
+  const queryVector = query.split("").map(c => c.charCodeAt(0));
 
   const safeStore = store ?? [];
 

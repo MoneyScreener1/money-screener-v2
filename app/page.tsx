@@ -8,10 +8,13 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   async function search() {
-    if (!query.trim()) return;
+  console.log("SEARCH STARTED");
 
-    setLoading(true);
+  if (!query.trim()) return;
 
+  setLoading(true);
+
+  try {
     const res = await fetch("/api/search", {
       method: "POST",
       headers: {
@@ -20,13 +23,23 @@ export default function Home() {
       body: JSON.stringify({ query }),
     });
 
+    console.log("RESPONSE RECEIVED:", res);
+
     const data = await res.json();
 
-    console.log("SEARCH RESPONSE:", data);
-    setResults(data.resultsWithClusters ?? data.results ?? []);
-    console.log("DATA:", data);
+    console.log("PARSED DATA:", data);
+
+    setResults(data.resultsWithClusters ?? []);
+
+  } catch (err) {
+    console.error("SEARCH ERROR:", err);
+    setResults([]);
+
+  } finally {
+    console.log("TURNING OFF LOADING");
     setLoading(false);
   }
+}
 
   return (
     <main className="min-h-screen bg-black text-white flex flex-col 

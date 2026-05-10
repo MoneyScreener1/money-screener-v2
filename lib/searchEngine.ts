@@ -1,13 +1,14 @@
 import fs from "fs";
 import path from "path";
 
+import storeData from "./vector-store.json";
+
 let store: any[] | null = null;
 
 export function getStore() {
   if (!store) {
-    const filePath = path.join(process.cwd(), "vector-store.json");
     console.log("Loading vector store...");
-    store = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    store = storeData;
   }
   return store;
 }
