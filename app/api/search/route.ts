@@ -36,9 +36,11 @@ export async function POST(req: Request) {
   console.log("Query:", query);
 
   const store = getStore();
-  const queryVector = await embed(query);
+  const queryVector = (await embed(query)) as number[];
 
-  const results = store
+  const safeStore = store ?? [];
+
+const results = safeStore
   .map((item: any) => {
     const score = cosineSimilarity(queryVector, item.vector);
 
@@ -53,18 +55,19 @@ export async function POST(req: Request) {
   .sort((a, b) => b.rankScore - a.rankScore)
   .slice(0, 12);
 
-  function assignCluster(score: number) {
+function assignCluster(score: number) {
   if (score > 0.65) return "core match";
   if (score > 0.5) return "related concept";
   return "weak association";
-  }
+}
 
-  const resultsWithClusters = results.map(r => ({
+const resultsWithClusters = results.map(r => ({
   ...r,
   cluster: assignCluster(r.score),
-  }));
+}));
 
-  console.timeEnd("search");
+console.timeEnd("search");
 
-  return Response.json({ resultsWithClusters });
+return Response.json({ resultsWithClusters });
+
 }
