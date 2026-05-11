@@ -1,11 +1,17 @@
-import storeData from "./vector-store.json";
+import fs from "fs";
+import path from "path";
 
 let store: any[] | null = null;
 
 export function getStore() {
   if (!store) {
-    store = storeData;
+    console.log("Loading vector store...");
+
+    const filePath = path.join(process.cwd(), "lib/vector-store.json");
+
+    store = JSON.parse(fs.readFileSync(filePath, "utf-8"));
   }
+
   return store;
 }
 
@@ -14,11 +20,24 @@ export function cosineSimilarity(a: number[], b: number[]) {
   let normA = 0;
   let normB = 0;
 
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
+  const len = Math.min(a.length, b.length);
+
+  for (let i = 0; i < len; i++) {
+    const av = Number(a[i] ?? 0);
+    const bv = Number(b[i] ?? 0);
+
+    dot += av * bv;
+    normA += av * av;
+    normB += bv * bv;
   }
 
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+
+  if (!denom || isNaN(denom)) return 0;
+
+  const result = dot / denom;
+
+  if (!isFinite(result)) return 0;
+
+  return result;
 }

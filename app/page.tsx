@@ -2,41 +2,44 @@
 
 import { useState } from "react";
 
+type Result = {
+  text: string;
+  score?: number;
+  cluster?: string;
+};
+
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
-
+   
   async function search() {
-  console.log("SEARCH STARTED");
-
   if (!query.trim()) return;
 
   setLoading(true);
 
   try {
     const res = await fetch("/api/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query }),
-    });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ query }),
+});
 
-    console.log("RESPONSE RECEIVED:", res);
 
-    const data = await res.json();
+console.log("STATUS:", res.status);
 
-    console.log("PARSED DATA:", data);
+const data = await res.json();
 
-    setResults(data.resultsWithClusters ?? []);
+console.log("DATA:", data);
+
+setResults(data.resultsWithClusters ?? []);
 
   } catch (err) {
-    console.error("SEARCH ERROR:", err);
+    console.error("SEARCH FAILED:", err);
     setResults([]);
-
   } finally {
-    console.log("TURNING OFF LOADING");
     setLoading(false);
   }
 }
@@ -44,6 +47,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white flex flex-col 
 items-center px-6 py-12">
+      
       {/* Header */}
       <div className="max-w-4xl w-full text-center mb-10">
         <h1 className="text-5xl font-bold tracking-tight mb-4">
@@ -51,9 +55,9 @@ items-center px-6 py-12">
         </h1>
 
         <p className="text-zinc-400 text-lg">
-          Interactive semantic search over dissertation research on
-          monetary salience, neuroeconomics, reinforcement learning,
-          and dopaminergic load.
+          Interactive semantic search over dissertation research on 
+monetary salience,
+          neuroeconomics, reinforcement learning, and dopaminergic load.
         </p>
       </div>
 
@@ -66,9 +70,7 @@ items-center px-6 py-12">
           className="flex-1 rounded-2xl bg-zinc-900 border border-zinc-700 
 px-5 py-4 text-white outline-none focus:border-white"
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              search();
-            }
+            if (e.key === "Enter") search();
           }}
         />
 
@@ -97,9 +99,7 @@ font-semibold hover:opacity-90 transition"
 shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm text-zinc-400">
-                Semantic Match
-              </div>
+              <div className="text-sm text-zinc-400">Semantic Match</div>
 
               <div className="text-sm font-mono text-green-400">
                 {typeof r.score === "number" ? r.score.toFixed(3) : "—"}

@@ -1,72 +1,77 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
 import { getStore, cosineSimilarity } from "@/lib/searchEngine";
 
-let embedderPromise: any = null;
+export async function POST(req: Request) {
+  try {
+    console.time("search");
 
-async function getEmbedder() {
-  if (!embedderPromise) {
-    console.log("Loading embedding model...");
-    embedderPromise = pipeline(
-      "feature-extraction",
-      "Xenova/all-MiniLM-L6-v2"
+    const { query } = await req.json();
+
+    console.log("Query:", query);
+
+    const store = getStore();
+
+    console.log("STORE SAMPLE:", store?.[0]);
+
+    // simple lightweight vector
+    const queryVector = query
+      .split("")
+      .map((c: string) => c.charCodeAt(0));
+
+    const safeStore = store ?? [];
+
+    const results = safeStore
+      .map((item: any) => {
+        const itemVector = Array.isArray(item.vector)
+          ? item.vector
+          : [];
+
+        const minLength = Math.min(
+  queryVector.length,
+  itemVector.length
+);
+
+const safeQueryVector = queryVector.slice(0, minLength);
+
+const safeItemVector = itemVector.slice(0, minLength);
+
+const score = cosineSimilarity(
+  safeQueryVector,
+  safeItemVector
+);
+
+        return {
+          ...item,
+          score,
+          rankScore: score,
+        };
+      })
+      .sort((a: any, b: any) => b.rankScore - a.rankScore)
+      .slice(0, 12);
+
+    function assignCluster(score: number) {
+      if (score > 0.65) return "core match";
+      if (score > 0.5) return "related concept";
+      return "weak association";
+    }
+
+    const resultsWithClusters = results.map((r: any) => ({
+      ...r,
+      cluster: assignCluster(r.score),
+    }));
+
+    console.timeEnd("search");
+
+    return Response.json({ resultsWithClusters });
+
+  } catch (err) {
+    console.error("API CRASH:", err);
+
+    return Response.json(
+      { error: "server crash" },
+      { status: 500 }
     );
   }
-  return embedderPromise;
-}
-
-async function embed(text: string) {
-  const embedder = await getEmbedder();
-
-  const output = await embedder(text, {
-    pooling: "mean",
-    normalize: true,
-  });
-
-  return Array.from(output.data);
-}
-
-export async function POST(req: Request) {
-  console.time("search");
-
-  const { query } = await req.json();
-
-  console.log("Query:", query);
-
-  const store = getStore();
-  console.log("STORE SAMPLE:", store?.[0]);
-  const queryVector = query.split("").map(c => c.charCodeAt(0));
-
-  const safeStore = store ?? [];
-
-const results = safeStore
-  .map((item: any) => {
-    const score = cosineSimilarity(queryVector, item.vector);
-
-    return {
-      ...item,
-      score,
-
-      // freeze ranking metadata
-      rankScore: score,
-    };
-  })
-  .sort((a, b) => b.rankScore - a.rankScore)
-  .slice(0, 12);
-
-function assignCluster(score: number) {
-  if (score > 0.65) return "core match";
-  if (score > 0.5) return "related concept";
-  return "weak association";
-}
-
-const resultsWithClusters = results.map(r => ({
-  ...r,
-  cluster: assignCluster(r.score),
-}));
-
-console.timeEnd("search");
-
-return Response.json({ resultsWithClusters });
-
 }
