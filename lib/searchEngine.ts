@@ -1,13 +1,9 @@
-import fs from "fs";
-import path from "path";
-
 import storeData from "./vector-store.json";
 
 let store: any[] | null = null;
 
 export function getStore() {
   if (!store) {
-    console.log("Loading vector store...");
     store = storeData;
   }
   return store;
